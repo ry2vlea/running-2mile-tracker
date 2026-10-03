@@ -1,0 +1,81 @@
+{
+  "projects": [
+    {
+      "id": "sub-15",
+      "name": "SUB-15",
+      "goal": "2 mi < 15:00",
+      "start": "17:40",
+      "goal_time": "15:00",
+      "placeholder": false,
+      "targets": [
+        {
+          "id": "sleep",
+          "label": "Sleep",
+          "metric": "sleep_avg",
+          "op": "gte",
+          "value": "7:30",
+          "window_days": 7,
+          "unit": "h"
+        },
+        {
+          "id": "protein",
+          "label": "Protein",
+          "metric": "protein_avg",
+          "op": "gte",
+          "value": 130,
+          "window_days": 7,
+          "unit": "g"
+        },
+        {
+          "id": "miles",
+          "label": "Weekly running",
+          "metric": "exercise_miles",
+          "op": "between",
+          "min": 8,
+          "max": 12,
+          "window_days": 7,
+          "unit": "mi"
+        },
+        {
+          "id": "recovery",
+          "label": "Recovery",
+          "metric": "readiness_avg",
+          "op": "gte",
+          "value": 70,
+          "window_days": 7,
+          "unit": ""
+        },
+        {
+          "id": "consistency",
+          "label": "Consistency",
+          "metric": "plan_hit_rate",
+          "op": "gte",
+          "value": 85,
+          "window_days": 14,
+          "unit": "%"
+        }
+      ]
+    },
+    {
+      "id": "body",
+      "name": "BODY",
+      "goal": "Body composition",
+      "placeholder": true,
+      "targets": []
+    },
+    {
+      "id": "sleep-reset",
+      "name": "SLEEP RESET",
+      "goal": "Reset sleep schedule",
+      "placeholder": true,
+      "targets": []
+    },
+    {
+      "id": "consistency-30",
+      "name": "30-DAY CONSISTENCY",
+      "goal": "Show up for 30 days",
+      "placeholder": true,
+      "targets": []
+    }
+  ]
+}

@@ -27,7 +27,7 @@ test("mock sample renders the sample numbers and does not call them a real trend
   assert.equal(view.metrics.bestTwoMile.gap, "1:52 slower than 15:00");
   assert.equal(view.metrics.bestPace.display, "8:10");
   assert.equal(view.metrics.bestPace.distance, "1.50");
-  assert.equal(view.metrics.exerciseMiles, "35.70");
+  assert.equal(view.metrics.exerciseMiles, "44.40");
   assert.equal(view.metrics.walkingMiles, "14.00");
   assert.equal(view.metrics.longest.display, "36:00");
   assert.equal(view.metrics.longest.date, "2026-09-25");
@@ -36,12 +36,12 @@ test("mock sample renders the sample numbers and does not call them a real trend
   assert.equal(view.metrics.excluded[0].row.date, "2026-09-19");
   assert.equal(view.trend, "insufficient data");
   assert.equal(view.previewTrend, "normal progression");
-  assert.deepEqual(Array.from(view.metrics.weeks, (week) => week.exerciseTh), [8500, 8700, 7600, 10900]);
-  assert.deepEqual(Array.from(view.metrics.weeks, (week) => week.walkingTh), [3500, 3700, 3300, 3500]);
-  assert.deepEqual(Array.from(view.metrics.weeks, (week) => week.continuousSec), [1755, 1960, 1680, 2160]);
-  assert.deepEqual(Array.from(view.metrics.weeks, (week) => week.walkBreaks), [3, 0, 2, 0]);
-  assert.equal(view.recent[0].date, "2026-09-27");
-  assert.equal(view.recent[0].activityType, "Recovery Walk");
+  assert.deepEqual(Array.from(view.metrics.weeks, (week) => week.exerciseTh), [8500, 8700, 7600, 10900, 8700]);
+  assert.deepEqual(Array.from(view.metrics.weeks, (week) => week.walkingTh), [3500, 3700, 3300, 3500, 0]);
+  assert.deepEqual(Array.from(view.metrics.weeks, (week) => week.continuousSec), [1755, 1960, 1680, 2160, 1760]);
+  assert.deepEqual(Array.from(view.metrics.weeks, (week) => week.walkBreaks), [3, 0, 2, 0, 0]);
+  assert.equal(view.recent[0].date, "2026-10-02");
+  assert.equal(view.recent[0].activityType, "Running at the Beach");
   assert.deepEqual(
     Array.from(view.recent.filter((item) => item.date === "2026-09-26"), (item) => item.activityType),
     ["Exercise at La Pista", "Walking to a Place", "Walking to a Place"],
@@ -56,7 +56,7 @@ test("a real row replaces mock data in every KPI", () => {
   assert.equal(real.errors.length, 0);
   const view = api.buildView({ rows: parsed.rows.concat(real.rows), errors: [] });
   assert.equal(view.showingMock, false);
-  assert.equal(view.hiddenMockCount, 26);
+  assert.equal(view.hiddenMockCount, 29);
   assert.equal(view.metrics.bestTwoMile.display, "15:30");
   assert.equal(view.metrics.exerciseMiles, "2.00");
   assert.equal(view.metrics.walkingMiles, "0.00");
@@ -108,7 +108,9 @@ test("pace mismatches and bad activity types are rejected", () => {
   assert.ok(badType.errors.some((issue) => /activity_type/.test(issue.message)));
 });
 
-test("the page header is the program title", () => {
+test("the training screen keeps the program title", () => {
   const html = readFileSync(new URL("index.html", root), "utf8");
-  assert.match(html, /RUNNING — 2-MILE SPEED · ENDURANCE · WEEKLY PROGRESS/);
+  const ui = readFileSync(new URL("ui.js", root), "utf8");
+  assert.match(html, /My Health OS/);
+  assert.match(ui, /RUNNING — 2-MILE SPEED · ENDURANCE · WEEKLY PROGRESS/);
 });

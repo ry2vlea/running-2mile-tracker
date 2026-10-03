@@ -346,3 +346,200 @@ td:first-child, th:first-child {
 @media (max-width: 380px) {
   .kpis { grid-template-columns: 1fr; }
 }
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  max-width: 980px;
+  margin: 0 auto 8px;
+  padding: 8px 0;
+  background: var(--bg);
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabs a {
+  flex: 0 0 auto;
+  color: var(--ink);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.tabs a[aria-current="page"] {
+  background: var(--ink);
+  color: white;
+  border-color: var(--ink);
+}
+
+.date-line {
+  margin: 4px 0 10px;
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.score-big {
+  margin: 2px 0 6px;
+  font-size: clamp(2.4rem, 10vw, 3.4rem);
+  font-weight: 760;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+}
+
+.meter {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  border-radius: inherit;
+}
+
+.readiness .meter span { background: var(--red); }
+
+.kicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.kicker .badge { margin-top: 0; }
+
+.coach-card {
+  border-color: #d7c4a4;
+}
+
+.session {
+  margin: 8px 0 0;
+  font-size: 1.2rem;
+  font-weight: 720;
+}
+
+.sub { margin-top: 10px; }
+
+.sub-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stack {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.stack li {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.stack li:last-child { border-bottom: 0; padding-bottom: 0; }
+
+.stack p { margin: 4px 0 0; }
+
+.stack li.quiet,
+.stack li.quiet strong {
+  color: var(--muted);
+}
+
+h3 {
+  margin: 14px 0 4px;
+  font-size: 0.95rem;
+}
+
+.program-title {
+  font-size: clamp(1.2rem, 2vw + 0.7rem, 1.7rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 8px 0 12px;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.88em;
+}
+
+.privacy {
+  max-width: 980px;
+  margin: 0 auto 12px;
+  padding: 10px 12px;
+  background: var(--flag-bg);
+  border-radius: 12px;
+}
+
+.privacy p { margin: 0 0 8px; }
+
+.stack-form {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 20px;
+}
+
+.stack-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.92rem;
+}
+
+.stack-form input,
+.stack-form select,
+.stack-form textarea {
+  width: 100%;
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+button {
+  font: inherit;
+  background: var(--ink);
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+}
+
+.form-errors {
+  min-height: 1.2em;
+  color: var(--red);
+  margin: 0;
+}
+
+.demo-toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 650;
+}

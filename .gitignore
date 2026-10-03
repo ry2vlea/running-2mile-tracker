@@ -1,3 +1,10 @@
 __pycache__/
 *.pyc
 .DS_Store
+*.local.csv
+*.local.json
+export.xml
+export.zip
+*apple*health*.zip
+*Apple*Health*.zip
+**/exports/

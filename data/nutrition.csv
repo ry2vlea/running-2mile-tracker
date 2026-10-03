@@ -1,0 +1,37 @@
+date,row_kind,name,kcal,protein_g,carbs_g,fat_g,hydration_ml,data_source,notes
+2026-08-31,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-01,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-02,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-03,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-04,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-05,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-06,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-07,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-08,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-09,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-10,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-11,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-12,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-13,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-14,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-15,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-16,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-17,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-18,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-19,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-20,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-21,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-22,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-23,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-24,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-25,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-26,daily,Daily total,2350,145,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-27,daily,Daily total,2350,150,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-28,daily,Daily total,2350,150,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-29,daily,Daily total,2350,150,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-09-30,daily,Daily total,2350,140,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-10-01,daily,Daily total,2350,120,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-10-02,daily,Daily total,2350,140,280,70,2600,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-10-03,daily,Daily total,2280,142,270,68,2000,mock,MOCK. Daily total. Food rows are detail and are not added on top.
+2026-10-03,food,MOCK oats,420,18,60,12,,mock,MOCK. Detail row. Not added on top of the daily total.
+2026-10-03,food,MOCK chicken,520,45,8,22,,mock,MOCK. Detail row. Not added on top of the daily total.

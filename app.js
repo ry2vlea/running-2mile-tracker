@@ -20,10 +20,10 @@ const GCT_MIN = 50;
 const GCT_MAX = 500;
 const CALORIES_MAX = 5000;
 
-const EXERCISE_TYPES = ["Exercise at La Pista", "Running at the Beach"];
+const EXERCISE_TYPES = ["Exercise at La Pista", "Running at the Beach", "Treadmill"];
 const WALKING_TYPES = ["Walking to a Place", "Recovery Walk"];
 const ACTIVITY_TYPES = EXERCISE_TYPES.concat(WALKING_TYPES);
-const DATA_SOURCES = ["apple_watch", "manual", "estimate", "mock"];
+const DATA_SOURCES = ["apple_watch", "manual", "estimate", "mock", "apple_health_import"];
 const COMPLETED_VALUES = ["yes", "partial", "no"];
 const ENERGY_VALUES = ["low", "moderate", "high"];
 const COLUMNS = [
@@ -31,6 +31,7 @@ const COLUMNS = [
   "pace_per_mi", "continuous_running_time", "walk_breaks", "rpe", "energy",
   "completed", "notes", "is_benchmark", "data_source", "avg_hr", "max_hr",
   "avg_cadence", "active_calories", "stride_length_m", "ground_contact_time_ms",
+  "temp_f", "humidity_pct", "dew_point_f", "incline_pct",
 ];
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -175,10 +176,11 @@ function parseCsv(text) {
     if (cells[0].trim().startsWith("#")) return;
     if (!header || errors.some((issue) => issue.message.startsWith("missing columns"))) return;
     if (cells[0].trim().startsWith("#")) return;
-    if (cells.length !== header.length) {
+    if (cells.length > header.length) {
       errors.push({ line, message: "expected " + header.length + " columns, found " + cells.length });
       return;
     }
+    while (cells.length < header.length) cells.push("");
     const raw = {};
     header.forEach((name, i) => { raw[name] = cells[i].trim(); });
     const built = buildRow(line, raw);
@@ -234,12 +236,17 @@ function buildRow(line, raw) {
   if (!COMPLETED_VALUES.includes(completed)) errors.push({ line, message: "completed must be yes, partial, or no" });
   let rpe = null;
   if ((raw.rpe || "") === "") {
-    if (completed === "yes" || completed === "partial") errors.push({ line, message: "rpe is required" });
+    if ((completed === "yes" || completed === "partial") && (raw.data_source || "").toLowerCase() !== "apple_health_import") {
+      errors.push({ line, message: "rpe is required" });
+    }
   } else if (!/^(?:[1-9]|10)$/.test(raw.rpe)) errors.push({ line, message: "rpe must be 1 to 10" });
   else rpe = Number(raw.rpe);
   const energy = (raw.energy || "").toLowerCase();
+  const sourceForEffort = (raw.data_source || "").toLowerCase();
   if (energy === "") {
-    if (completed === "yes" || completed === "partial") errors.push({ line, message: "energy is required" });
+    if ((completed === "yes" || completed === "partial") && sourceForEffort !== "apple_health_import") {
+      errors.push({ line, message: "energy is required" });
+    }
   } else if (!ENERGY_VALUES.includes(energy)) errors.push({ line, message: "energy must be low, moderate, or high" });
   const isBenchmark = (raw.is_benchmark || "").toLowerCase();
   if (isBenchmark !== "yes" && isBenchmark !== "no") errors.push({ line, message: "is_benchmark must be yes or no" });
@@ -290,6 +297,11 @@ function buildRow(line, raw) {
   if (strideMm !== null && (strideMm < STRIDE_MIN_MM || strideMm > STRIDE_MAX_MM)) anomalies.push("stride length is outside 0.300–3.000 m");
   if (gct.value !== null && (gct.value < GCT_MIN || gct.value > GCT_MAX)) anomalies.push("ground contact time is outside the expected range");
   if (calories.value !== null && calories.value > CALORIES_MAX) anomalies.push("active calories are above " + CALORIES_MAX);
+  const tempF = optionalNumber(raw.temp_f || "", "temp_f", 20, 120, errors, line);
+  const humidityPct = optionalNumber(raw.humidity_pct || "", "humidity_pct", 0, 100, errors, line);
+  const dewPointF = optionalNumber(raw.dew_point_f || "", "dew_point_f", 0, 100, errors, line);
+  const inclinePct = optionalNumber(raw.incline_pct || "", "incline_pct", 0, 15, errors, line);
+  if (errors.length) return { row: null, errors };
 
   return {
     row: {
@@ -309,6 +321,11 @@ function buildRow(line, raw) {
       notes: raw.notes || "",
       isBenchmark,
       dataSource,
+      avgHr: avg.value,
+      tempF,
+      humidityPct,
+      dewPointF,
+      inclinePct,
       anomalies,
     },
     errors,
@@ -324,6 +341,7 @@ function benchmarkProblems(row) {
   if (row.distanceTh < BENCH_MIN_TH || row.distanceTh > BENCH_MAX_TH) problems.push("distance is not about 2.00 mi");
   if (Math.abs(row.continuousSec - row.durationSec) > 2) problems.push("not continuous");
   if (row.anomalies.length) problems.push("flagged value");
+  if (row.activityType === "Treadmill") problems.push("treadmill is an estimate, not a track benchmark");
   return problems;
 }
 
@@ -406,6 +424,7 @@ function computeMetrics(rows) {
   const bestTwo = benchmarks.slice().sort((a, b) => a.durationSec - b.durationSec || a.date.localeCompare(b.date))[0] || null;
   const comparable = usable.filter((row) => (
     EXERCISE_TYPES.includes(row.activityType)
+    && row.activityType !== "Treadmill"
     && row.completed === "yes"
     && row.distanceTh >= MIN_COMPARABLE_MI_TH
     && row.distanceTh <= MAX_COMPARABLE_MI_TH
@@ -597,11 +616,13 @@ function renderRecent(view) {
     else if (row.isBenchmark === "yes" && row.durationSec === bestSeconds && row.date === bestDate) badges.push('<span class="badge">Best 2-mile</span>');
     else if (row.isBenchmark === "yes") badges.push('<span class="badge">Benchmark</span>');
     const source = row.dataSource === "estimate" ? '<span class="type-sub">Estimate</span>' : "";
-    return "<tr><td>" + escapeHtml(formatDate(row.date)) + "</td><td>" + row.week + "</td><td>" + formatMiles(row.distanceTh) + "</td><td>" + formatDuration(row.durationSec) + "</td><td>" + (row.paceSec === null ? "—" : formatDuration(row.paceSec)) + "</td><td>" + escapeHtml(row.activityType) + '<span class="type-sub">' + escapeHtml(row.workout) + "</span>" + source + badges.join("") + "</td><td class=\"note\">" + escapeHtml(row.notes) + "</td></tr>";
+    const compared = comparedPace(row);
+    const pace = row.paceSec === null ? "—" : formatDuration(row.paceSec) + (compared ? '<span class="type-sub">' + escapeHtml(compared.label) + " " + formatDuration(compared.seconds) + "</span>" : "");
+    return "<tr><td>" + escapeHtml(formatDate(row.date)) + "</td><td>" + row.week + "</td><td>" + formatMiles(row.distanceTh) + "</td><td>" + formatDuration(row.durationSec) + "</td><td>" + pace + "</td><td>" + escapeHtml(row.activityType) + '<span class="type-sub">' + escapeHtml(row.workout) + "</span>" + source + badges.join("") + "</td><td class=\"note\">" + escapeHtml(row.notes) + "</td></tr>";
   }).join("");
   const host = document.querySelector("#recent");
   if (!view.recent.length) {
-    host.innerHTML = "<h2>Recent activities</h2><p class=\"empty\">No activities in the file yet. Add a row to data/running_data.csv.</p>";
+    host.innerHTML = "<h2>Recent activities</h2><p class=\"empty\">No activities yet. Add one on the Log screen. It stays in this browser.</p>";
     return;
   }
   host.innerHTML = '<div class="table-wrap"><table><caption>Recent activities</caption><thead><tr><th scope="col">Date</th><th scope="col">Week</th><th scope="col">Distance</th><th scope="col">Time</th><th scope="col">Pace/mi</th><th scope="col">Type</th><th scope="col">Notes</th></tr></thead><tbody>' + body + "</tbody></table></div><p class=\"lede\">Showing " + view.recent.length + " activities. On the same day, exercise sits above transport walks.</p>";
@@ -844,14 +865,80 @@ if (typeof window !== "undefined") {
   });
 }
 
+function presentTraining(view) {
+  currentView = view;
+  render(view);
+  drawCharts();
+}
+
 if (typeof document !== "undefined") {
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", () => {
+    if (document.getElementById("app")) return;
+    init();
+  });
+}
+
+function optionalNumber(text, label, low, high, errors, line) {
+  if (!text) return null;
+  if (!/^-?\d+(?:\.\d+)?$/.test(text)) {
+    errors.push({ line, message: label + " must be a number" });
+    return null;
+  }
+  const value = Number(text);
+  if (value < low || value > high) errors.push({ line, message: label + " is outside " + low + "–" + high });
+  return value;
+}
+
+function roundHalfUpNumber(value) {
+  return Math.floor(value + 0.5);
+}
+
+function estimatedDewPointF(tempF, humidityPct) {
+  const t = (tempF - 32) * 5 / 9;
+  const alpha = Math.log(humidityPct / 100) + (17.625 * t) / (243.04 + t);
+  const dewC = (243.04 * alpha) / (17.625 - alpha);
+  return dewC * 9 / 5 + 32;
+}
+
+function comparedPace(row) {
+  if (!row || row.paceSec == null || WALKING_TYPES.includes(row.activityType)) return null;
+  let factor = 1;
+  const labels = [];
+  if (row.activityType === "Treadmill") {
+    const incline = row.inclinePct == null ? 0 : row.inclinePct;
+    factor *= 1 + 0.04 * (1 - incline);
+    labels.push("outdoor est.");
+  }
+  let dew = row.dewPointF;
+  if (dew == null && row.tempF != null && row.humidityPct != null) dew = estimatedDewPointF(row.tempF, row.humidityPct);
+  if (dew != null && dew >= 50) {
+    factor *= 1 + Math.min(0.15, (dew - 50) * 0.005);
+    labels.push("heat est.");
+  }
+  if (!labels.length) return null;
+  return { seconds: roundHalfUpNumber(row.paceSec * factor), label: labels.join(" · ") };
+}
+
+function validateRaw(raw) {
+  return buildRow(1, raw);
+}
+
+function suggestPace(durationText, distanceText) {
+  const duration = parseDuration(durationText);
+  const distance = parseMilesThousandths(distanceText);
+  if (!duration || !distance) return "";
+  return formatDuration(expectedPace(duration, distance));
 }
 
 globalThis.RunningDashboard = {
   parseCsv,
   buildView,
   computeMetrics,
+  presentTraining,
+  validateRaw,
+  comparedPace,
+  suggestPace,
+  COLUMNS,
   GOAL_SEC,
   EXERCISE_TYPES,
   WALKING_TYPES,
