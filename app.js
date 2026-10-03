@@ -570,9 +570,13 @@ function renderEndurance(view) {
 function renderWeekly(view) {
   const weeks = view.metrics.weeks;
   const host = document.querySelector("#chart-weekly");
+  const weekItems = weeks.map((week) => (
+    "<li><strong>W" + week.week + "</strong><span>" + formatMiles(week.exerciseTh) + " exercise mi · " + formatMiles(week.walkingTh) + " walking mi</span></li>"
+  )).join("");
   host.innerHTML = '<h2>Weekly miles</h2><p class="lede">Exercise miles against walking miles. Walking is transport plus Sunday recovery, and it is not added to the running total.</p>'
     + (weeks.length ? '<div class="chart-scroll"><canvas id="weekly-canvas" role="img" aria-label="Weekly exercise miles compared with walking miles."></canvas></div>' : '<p class="empty">No miles yet.</p>')
     + '<p class="legend"><span><i class="swatch" style="background:#0f6e56"></i>Exercise</span><span><i class="swatch" style="background:#8d7b66"></i>Walking</span></p>'
+    + '<ul class="week-list">' + weekItems + "</ul>"
     + chartTable(weeks.map((week) => ["W" + week.week, formatMiles(week.exerciseTh), formatMiles(week.walkingTh)]), ["Week", "Exercise mi", "Walking mi"]);
 }
 
@@ -646,9 +650,10 @@ function drawTwoMile() {
   const plotW = width - pad.l - pad.r;
   const plotH = height - pad.t - pad.b;
   const times = points.map((row) => row.durationSec);
-  const minY = Math.min(GOAL_SEC, ...times) - 40;
-  const maxY = Math.max(GOAL_SEC, ...times) + 50;
+  const minY = Math.min(GOAL_SEC, ...times) - 45;
+  const maxY = Math.max(GOAL_SEC, ...times) + 45;
   const yAt = (sec) => pad.t + ((maxY - sec) / (maxY - minY)) * plotH;
+  const step = maxY - minY > 240 ? 60 : 30;
   const xAt = (index) => points.length === 1 ? pad.l + plotW / 2 : pad.l + (plotW * index) / (points.length - 1);
 
   ctx.strokeStyle = "#e5dccb";
@@ -656,7 +661,7 @@ function drawTwoMile() {
   ctx.fillStyle = "#5c564c";
   ctx.textAlign = "right";
   ctx.textBaseline = "middle";
-  for (let sec = Math.ceil(minY / 30) * 30; sec <= maxY; sec += 30) {
+  for (let sec = Math.ceil(minY / step) * step; sec <= maxY; sec += step) {
     const y = yAt(sec);
     ctx.beginPath();
     ctx.moveTo(pad.l, y);
@@ -675,8 +680,9 @@ function drawTwoMile() {
   ctx.stroke();
   ctx.restore();
   ctx.fillStyle = "#b42318";
-  ctx.textAlign = "left";
-  ctx.fillText("15:00", pad.l + 4, Math.max(12, goalY - 8));
+  ctx.textAlign = "right";
+  ctx.textBaseline = "bottom";
+  ctx.fillText("15:00", width - pad.r, Math.max(14, goalY - 4));
 
   ctx.strokeStyle = "#1c1915";
   ctx.lineWidth = 2;
@@ -741,9 +747,6 @@ function drawEndurance() {
     const barH = (miles / maxMi) * plotH;
     ctx.fillStyle = "#cfe7dc";
     ctx.fillRect(cx - 14, pad.t + plotH - barH, 28, barH);
-    ctx.fillStyle = "#0f6e56";
-    ctx.textAlign = "center";
-    ctx.fillText(formatMiles(week.exerciseTh), cx, pad.t + plotH - barH - 6);
   });
 
   ctx.beginPath();
@@ -805,13 +808,10 @@ function drawWeekly() {
     ctx.fillRect(cx - barW - 2, pad.t + plotH - exH, barW, exH);
     ctx.fillStyle = "#8d7b66";
     ctx.fillRect(cx + 2, pad.t + plotH - walkH, barW, walkH);
-    ctx.fillStyle = "#1c1915";
+    ctx.fillStyle = "#5c564c";
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
-    ctx.font = "11px Avenir Next, Segoe UI, sans-serif";
-    ctx.fillText(formatMiles(week.exerciseTh), cx - barW / 2 - 2, pad.t + plotH - exH - 4);
-    ctx.fillText(formatMiles(week.walkingTh), cx + barW / 2 + 2, pad.t + plotH - walkH - 4);
-    ctx.fillStyle = "#5c564c";
+    ctx.font = "12px Avenir Next, Segoe UI, sans-serif";
     ctx.fillText("W" + week.week, cx, height - 10);
   });
 }

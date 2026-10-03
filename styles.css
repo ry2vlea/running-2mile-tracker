@@ -39,6 +39,7 @@ main, .site-header, .site-footer {
   max-width: 980px;
   margin-left: auto;
   margin-right: auto;
+  overflow-x: clip;
 }
 
 .skip {
@@ -74,7 +75,7 @@ h1 {
   line-height: 1.12;
   letter-spacing: -0.02em;
   font-weight: 760;
-  max-width: 22ch;
+  max-width: 18em;
 }
 
 .goal-line {
@@ -155,6 +156,8 @@ h1 {
   padding: 14px;
   box-shadow: var(--shadow);
   margin-bottom: 12px;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .card h2 {
@@ -169,7 +172,11 @@ h1 {
   font-size: 0.92rem;
 }
 
-.chart-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.chart-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
 
 canvas {
   display: block;
@@ -229,13 +236,22 @@ canvas {
 
 .week-list strong { color: var(--muted); }
 
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; }
+.table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
 
 table {
   width: 100%;
   border-collapse: collapse;
   min-width: 680px;
   font-variant-numeric: tabular-nums;
+}
+
+table.sr-only {
+  min-width: 0;
+  width: 1px;
 }
 
 caption {
