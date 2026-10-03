@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 import re
 import sys
 from dataclasses import dataclass, field
@@ -42,10 +43,10 @@ GCT_MIN = 50
 GCT_MAX = 500
 CALORIES_MAX = 5000
 
-EXERCISE_TYPES = ("Exercise at La Pista", "Running at the Beach")
+EXERCISE_TYPES = ("Exercise at La Pista", "Running at the Beach", "Treadmill")
 WALKING_TYPES = ("Walking to a Place", "Recovery Walk")
 ACTIVITY_TYPES = EXERCISE_TYPES + WALKING_TYPES
-DATA_SOURCES = ("apple_watch", "manual", "estimate", "mock")
+DATA_SOURCES = ("apple_watch", "manual", "estimate", "mock", "apple_health_import")
 COMPLETED_VALUES = ("yes", "partial", "no")
 ENERGY_VALUES = ("low", "moderate", "high")
 
@@ -71,6 +72,10 @@ COLUMNS = (
     "active_calories",
     "stride_length_m",
     "ground_contact_time_ms",
+    "temp_f",
+    "humidity_pct",
+    "dew_point_f",
+    "incline_pct",
 )
 
 HEADER_STRING = "RUNNING — 2-MILE SPEED · ENDURANCE · WEEKLY PROGRESS"
@@ -94,6 +99,7 @@ class Row:
     notes: str
     is_benchmark: str
     data_source: str
+    avg_hr: int | None = None
     anomalies: list[str] = field(default_factory=list)
 
 
@@ -234,11 +240,13 @@ def validate_text(text: str, source_name: str = "data/running_data.csv") -> tupl
         except csv.Error as exc:
             issues.append(Issue(line_no, "error", f"could not read row ({exc})"))
             continue
-        if len(cells) != len(header):
+        if len(cells) > len(header):
             issues.append(
                 Issue(line_no, "error", f"expected {len(header)} columns, found {len(cells)}")
             )
             continue
+        if len(cells) < len(header):
+            cells = cells + [""] * (len(header) - len(cells))
         raw = {header[i]: cells[i].strip() for i in range(len(header))}
         row, row_issues = build_row(line_no, raw)
         issues.extend(row_issues)
@@ -336,8 +344,9 @@ def build_row(line_no: int, raw: dict[str, str]) -> tuple[Row | None, list[Issue
 
     rpe_text = raw.get("rpe", "")
     rpe: int | None = None
+    imported = raw.get("data_source", "").lower() == "apple_health_import"
     if rpe_text == "":
-        if completed in ("yes", "partial"):
+        if completed in ("yes", "partial") and not imported:
             error("rpe is required when completed is yes or partial")
     elif not re.fullmatch(r"[1-9]|10", rpe_text):
         error("rpe must be a whole number from 1 to 10")
@@ -346,7 +355,7 @@ def build_row(line_no: int, raw: dict[str, str]) -> tuple[Row | None, list[Issue
 
     energy = raw.get("energy", "").lower()
     if energy == "":
-        if completed in ("yes", "partial"):
+        if completed in ("yes", "partial") and not imported:
             error("energy is required when completed is yes or partial")
     elif energy not in ENERGY_VALUES:
         error("energy must be low, moderate, or high")
@@ -357,7 +366,7 @@ def build_row(line_no: int, raw: dict[str, str]) -> tuple[Row | None, list[Issue
 
     source = raw.get("data_source", "").lower()
     if source not in DATA_SOURCES:
-        error("data_source must be apple_watch, manual, estimate, or mock")
+        error("data_source must be " + ", ".join(DATA_SOURCES))
 
     notes = raw.get("notes", "")
 
@@ -402,6 +411,22 @@ def build_row(line_no: int, raw: dict[str, str]) -> tuple[Row | None, list[Issue
         error("walking activities must use continuous_running_time of 0:00")
     if activity in WALKING_TYPES and benchmark == "yes":
         error("a walk cannot be marked as a 2-mile benchmark")
+
+    def optional_number(text: str, label: str, low: float, high: float) -> None:
+        if text == "":
+            return
+        try:
+            value = float(text)
+        except ValueError:
+            error(f"{label} must be a number")
+            return
+        if not low <= value <= high:
+            error(f"{label} is outside {low}–{high}")
+
+    optional_number(raw.get("temp_f", ""), "temp_f", 20, 120)
+    optional_number(raw.get("humidity_pct", ""), "humidity_pct", 0, 100)
+    optional_number(raw.get("dew_point_f", ""), "dew_point_f", 0, 100)
+    optional_number(raw.get("incline_pct", ""), "incline_pct", 0, 15)
 
     if any(issue.level == "error" for issue in issues):
         return None, issues
@@ -454,6 +479,7 @@ def build_row(line_no: int, raw: dict[str, str]) -> tuple[Row | None, list[Issue
         notes=notes,
         is_benchmark=benchmark,
         data_source=source,
+        avg_hr=avg_hr,
         anomalies=anomalies,
     )
     return row, issues
@@ -468,6 +494,44 @@ def valid_calendar_date(year: int, month: int, day: int) -> bool:
 
 def leap(year: int) -> bool:
     return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+
+
+def estimated_dew_point_f(temp_f: float, humidity_pct: float) -> float:
+    temp_c = (temp_f - 32) * 5 / 9
+    alpha = math.log(humidity_pct / 100) + (17.625 * temp_c) / (243.04 + temp_c)
+    dew_c = (243.04 * alpha) / (17.625 - alpha)
+    return dew_c * 9 / 5 + 32
+
+
+def round_half_up_number(value: float) -> int:
+    return math.floor(value + 0.5)
+
+
+def compared_pace(
+    activity: str,
+    pace_sec: int | None,
+    incline: float | None = None,
+    dew: float | None = None,
+    temp: float | None = None,
+    humidity: float | None = None,
+) -> int | None:
+    """Outdoor-equivalent pace. Never replaces the stored pace."""
+    if pace_sec is None or activity in WALKING_TYPES:
+        return None
+    factor = 1.0
+    labels: list[str] = []
+    if activity == "Treadmill":
+        grade = 0.0 if incline is None else incline
+        factor *= 1 + 0.04 * (1 - grade)
+        labels.append("outdoor est.")
+    if dew is None and temp is not None and humidity is not None:
+        dew = estimated_dew_point_f(temp, humidity)
+    if dew is not None and dew >= 50:
+        factor *= 1 + min(0.15, (dew - 50) * 0.005)
+        labels.append("heat est.")
+    if not labels:
+        return None
+    return round_half_up_number(pace_sec * factor)
 
 
 def benchmark_problems(row: Row) -> list[str]:
@@ -486,6 +550,8 @@ def benchmark_problems(row: Row) -> list[str]:
         problems.append("not continuous")
     if row.anomalies:
         problems.append("flagged value")
+    if row.activity_type == "Treadmill":
+        problems.append("treadmill is an estimate, not a track benchmark")
     return problems
 
 
@@ -525,6 +591,7 @@ def compute_metrics(rows: list[Row]) -> Metrics:
         row
         for row in usable
         if row.activity_type in EXERCISE_TYPES
+        and row.activity_type != "Treadmill"
         and row.completed == "yes"
         and MIN_COMPARABLE_MI_TH <= row.distance_th <= MAX_COMPARABLE_MI_TH
         and row.pace_sec is not None
@@ -728,20 +795,20 @@ def self_test() -> None:
     check("Walking miles: 0.00" in report, report)
     check("Best 2-mile: 16:52 (1:52 slower than 15:00) on 2026-09-26" in report, report)
     check("Best pace: 8:10/mi at 1.50 mi on 2026-09-23" in report, report)
-    check("Exercise miles: 35.70" in report, report)
+    check("Exercise miles: 44.40" in report, report)
     check("Walking miles: 14.00" in report, report)
     check("Longest continuous run: 36:00 on 2026-09-25" in report, report)
     check("Valid 2-mile benchmarks: 2" in report, report)
     check("Left off the 2-mile chart: 1" in report, report)
     check("2026-09-19" in report and "walk breaks" in report, report)
-    check("Rows: 26 (real 0, mock 26)" in report, report)
+    check("Rows: 29 (real 0, mock 29)" in report, report)
 
     rows, issues = validate_text(DEFAULT_DATA.read_text(encoding="utf-8"))
     check(issues == [], issues)
     check(all(row.data_source == "mock" for row in rows), "sample file must be mock only")
     exercise = sum(row.distance_th for row in rows if row.activity_type in EXERCISE_TYPES and row.completed in ("yes", "partial"))
     walking = sum(row.distance_th for row in rows if row.activity_type in WALKING_TYPES)
-    check(exercise == 35700, exercise)
+    check(exercise == 44400, exercise)
     check(walking == 14000, walking)
     transport = sum(row.distance_th for row in rows if row.activity_type == "Walking to a Place")
     check(transport == 6000, transport)
@@ -941,8 +1008,17 @@ def self_test() -> None:
         "fatigue",
     )
 
+    check(compared_pace("Treadmill", 600, incline=0) == 624, "treadmill 0%")
+    check(compared_pace("Treadmill", 600, incline=1) == 600, "treadmill 1%")
+    check(compared_pace("Running at the Beach", 500, dew=70) == 550, "dew 70")
+    check(compared_pace("Running at the Beach", 500) is None, "no weather")
+    hot, hot_issues = validate_text(csv_for([sample() + ",130"]))
+    check(hot == [] and any("outside" in issue.message for issue in hot_issues), hot_issues)
+
     html = (ROOT / "index.html").read_text(encoding="utf-8")
-    check(HEADER_STRING in html, "dashboard header missing")
+    ui_path = ROOT / "ui.js"
+    ui = ui_path.read_text(encoding="utf-8") if ui_path.is_file() else ""
+    check(HEADER_STRING in html or HEADER_STRING in ui, "dashboard header missing")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     for phrase in (
         "data/running_data.csv",
@@ -987,6 +1063,14 @@ def main(argv: list[str]) -> int:
             path = Path(arg)
     report, code = analyze_path(path)
     sys.stdout.write(report)
+    custom = any(not arg.startswith("-") for arg in argv[1:])
+    if not custom:
+        from health_data import validate_repo
+
+        extra, extra_code = validate_repo(ROOT)
+        sys.stdout.write("\n" + extra)
+        if extra_code:
+            code = extra_code
     return code
 
 

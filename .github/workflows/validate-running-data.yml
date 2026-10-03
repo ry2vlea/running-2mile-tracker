@@ -13,5 +13,15 @@ jobs:
         run: python3 scripts/validate_running_data.py
       - name: Self-test the validator
         run: python3 scripts/validate_running_data.py --self-test
+      - name: Self-test the health rules
+        run: python3 scripts/health_data.py --self-test
+      - name: Self-test the Apple Health importer
+        run: python3 scripts/import_apple_health.py --self-test
+      - name: Self-test the coach context builder
+        run: python3 scripts/build_coach_context.py --self-test
       - name: Check dashboard calculations
         run: node tests/dashboard_rules.test.mjs
+      - name: Check health OS calculations
+        run: node tests/health_os.test.mjs
+      - name: Check on-device storage
+        run: node tests/store.test.mjs

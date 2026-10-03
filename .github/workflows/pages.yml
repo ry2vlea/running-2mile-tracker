@@ -24,9 +24,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Assemble static site
         run: |
-          mkdir -p _site/data
-          cp index.html styles.css app.js _site/
-          cp data/running_data.csv _site/data/
+          mkdir -p _site
+          cp index.html styles.css app.js health.js store.js ui.js _site/
+          cp -R data _site/data
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
