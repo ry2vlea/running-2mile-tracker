@@ -1,0 +1,17 @@
+name: Validate running data
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the CSV
+        run: python3 scripts/validate_running_data.py
+      - name: Self-test the validator
+        run: python3 scripts/validate_running_data.py --self-test
+      - name: Check dashboard calculations
+        run: node tests/dashboard_rules.test.mjs
